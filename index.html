@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Finctar.co</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+  <style>
+    :root{
+      --card-bg:#0c1220; --card-br:#1b2640; --text-dim:#a5b4fc;
+      --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+    }
+    body{min-height:100vh; background: radial-gradient(ellipse at bottom, #111827 0%, #0b1020 45%, #070913 100%); color:#e5e7eb; overflow-x:hidden}
+    .aurora{position:fixed; inset:0; z-index:-1; overflow:hidden}
+    .blob{position:absolute; border-radius:50%; filter: blur(60px); opacity:.25; animation: floatUp linear infinite}
+    .b1{width:420px; height:420px; left:8%; bottom:-30%; background:#22d3ee; animation-duration:28s}
+    .b2{width:540px; height:540px; left:60%; bottom:-35%; background:#8b5cf6; animation-duration:34s}
+    .b3{width:360px; height:360px; left:30%; bottom:-32%; background:#10b981; animation-duration:24s}
+    @keyframes floatUp{0%{transform:translateY(0)}100%{transform:translateY(-140vh)}}
+    .glass{background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.08); box-shadow: 0 10px 30px rgba(0,0,0,.25); border-radius:16px; backdrop-filter: blur(8px)}
+    .inpt{background:#000 !important; color:#fff !important; border:1px solid #334155; border-radius:10px; padding:10px 12px; width:100%; transition: box-shadow .25s, border-color .25s}
+    .inpt:focus{outline:none; border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.35)}
+    .label{color:#c7d2fe}
+    .dot{width:10px; height:10px; border-radius:999px; display:inline-block; margin-right:6px}
+    .chart-wrap{height:320px; overflow:hidden}
+    .bar{height:10px; border-radius:999px; overflow:hidden; background:#1f2937}
+    .bar > div{height:100%; transition:width .9s ease}
+    .badge{padding:.2rem .6rem; border-radius:999px; font-size:.75rem; border:1px solid rgba(255,255,255,.12)}
+    .mono{font-variant-numeric: tabular-nums}
+  </style>
+</head>
+<body class="px-4 md:px-8 pb-10">
+  <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+
+  <!-- Header -->
+  <header class="max-w-7xl mx-auto mt-6 mb-6">
+    <div class="glass p-5 md:p-7 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-xl grid place-items-center bg-gradient-to-tr from-indigo-500 to-teal-400 text-white text-2xl shadow-lg"><i class="fa-solid fa-wallet"></i></div>
+        <div>
+          <div class="text-white text-2xl font-bold">Finctar</div>
+          <p class="text-sm md:text-base" style="color:var(--text-dim)">membantu dalam mencari solusi finasialmu </p>
+        </div>
+      </div>
+      <div class="hidden md:block text-sm text-indigo-200"></div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Sidebar / Inputs -->
+    <section class="glass p-5 md:p-6 lg:col-span-1">
+      <h2 class="text-lg font-semibold mb-4"><i class="fa-solid fa-sliders text-indigo-400 mr-2"></i> Input Data</h2>
+      <div class="grid grid-cols-1 gap-4">
+        <div>
+          <label class="label block mb-1">Usia</label>
+          <input type="number" id="age" class="inpt" placeholder="cth: 28" min="0" />
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="label block mb-1">Pendapatan Utama</label>
+            <input type="text" id="income" class="inpt rupiah" placeholder="Rp 0" />
+          </div>
+          <div>
+            <label class="label block mb-1">Pendapatan Pasangan </label>
+            <input type="text" id="partnerIncome" class="inpt rupiah" placeholder="Rp 0" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label class="label block mb-1">Cicilan Hutang</label><input type="text" id="installment" class="inpt rupiah" placeholder="Rp 0" /></div>
+          <div><label class="label block mb-1">Biaya Pendidikan</label><input type="text" id="education" class="inpt rupiah" placeholder="Rp 0" /></div>
+          <div><label class="label block mb-1">Kesehatan</label><input type="text" id="health" class="inpt rupiah" placeholder="Rp 0" /></div>
+          <div><label class="label block mb-1">Tabungan Darurat (setoran/bln)</label><input type="text" id="emergency" class="inpt rupiah" placeholder="Rp 0" /></div>
+          <div><label class="label block mb-1">Dana Pensiun (setoran/bln)</label><input type="text" id="pension" class="inpt rupiah" placeholder="Rp 0" /></div>
+          <div><label class="label block mb-1">Gaya Hidup</label><input type="text" id="lifestyle" class="inpt rupiah" placeholder="Rp 0" /></div>
+          <div class="md:col-span-2"><label class="label block mb-1">Lainnya</label><input type="text" id="other" class="inpt rupiah" placeholder="Rp 0" /></div>
+        </div>
+        <button id="analyze" class="mt-2 py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-teal-500 hover:opacity-95 transition font-semibold"><i class="fa-solid fa-rocket mr-2"></i>Analisis Keuangan</button>
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section id="resultsWrap" class="lg:col-span-2 space-y-6 opacity-0 pointer-events-none transition-opacity duration-300">
+      <!-- Status Row -->
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div class="glass p-5">
+          <div class="flex items-center justify-between">
+            <div class="text-sm text-indigo-200">Total Pendapatan</div>
+            <div class="badge">per bulan</div>
+          </div>
+          <div id="totalIncome" class="text-2xl md:text-3xl font-bold mt-2">Rp 0</div>
+        </div>
+        <div class="glass p-5">
+          <div class="flex items-center justify-between">
+            <div class="text-sm text-indigo-200">Total Pengeluaran</div>
+            <div class="badge">per bulan</div>
+          </div>
+          <div id="totalExpense" class="text-2xl md:text-3xl font-bold mt-2">Rp 0</div>
+        </div>
+        <div class="glass p-5">
+          <div class="text-sm text-indigo-200 mb-2">Status Keuangan</div>
+          <div class="flex items-center gap-3"><span id="statusDot" class="dot" style="background:var(--ok)"></span><div id="statusText" class="text-lg font-semibold">—</div></div>
+          <div id="statusNote" class="text-sm mt-2 text-gray-300"></div>
+        </div>
+      </div>
+
+      <!-- Category Progress -->
+      <div class="glass p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold"><i class="fa-solid fa-gauge-high text-teal-400 mr-2"></i>Progress per Kategori</h3>
+          <div class="text-sm text-indigo-200">perbandingan pengeluaran vs batas aman</div>
+        </div>
+        <div id="catProgress" class="space-y-4"></div>
+      </div>
+
+      <!-- Daily Plan  -->
+      <div class="glass p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-semibold"><i class="fa-solid fa-calendar-day text-yellow-400 mr-2"></i>pengeluaran ideal dalam satu hari 
+          <div class="flex items-center gap-2 text-sm text-indigo-200">
+            <label for="daysSelect">Hari/bulan:</label>
+            <select id="daysSelect" class="inpt py-1 px-2 w-auto">
+              <option value="28">28</option>
+              <option value="29">29</option>
+              <option value="30" selected>30</option>
+              <option value="31">31</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-4 rounded-lg border border-green-500/30">
+            <div class="text-sm text-green-300 mb-1">Kebutuhan (50%)</div>
+            <div id="needDay" class="text-2xl font-bold mono">Rp 0</div>
+            <div id="needMonth" class="text-xs text-green-200 mt-1">/ bulan: Rp 0</div>
+          </div>
+          <div class="p-4 rounded-lg border border-yellow-500/30">
+            <div class="text-sm text-yellow-300 mb-1">Keinginan (30%)</div>
+            <div id="wantDay" class="text-2xl font-bold mono">Rp 0</div>
+            <div id="wantMonth" class="text-xs text-yellow-200 mt-1">/ bulan: Rp 0</div>
+          </div>
+          <div class="p-4 rounded-lg border border-blue-500/30">
+            <div class="text-sm text-blue-300 mb-1">Tabungan/Investasi (20%)</div>
+            <div id="saveDay" class="text-2xl font-bold mono">Rp 0</div>
+            <div id="saveMonth" class="text-xs text-blue-200 mt-1">/ bulan: Rp 0</div>
+          </div>
+        </div>
+
+        <!-- Monthly/Day overview -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div class="p-4 rounded-lg border border-indigo-500/30">
+            <div class="text-sm text-indigo-200">Pendapatan Bulanan</div>
+            <div id="outMonth" class="text-xl font-bold mono">Rp 0</div>
+          </div>
+          <div class="p-4 rounded-lg border border-indigo-500/30">
+            <div class="text-sm text-indigo-200">Rata-rata Per Hari</div>
+            <div id="outPerDay" class="text-xl font-bold mono">Rp 0</div>
+            <div id="outDays" class="text-xs text-indigo-300 mt-1">(dibagi 30 hari/bulan)</div>
+          </div>
+        </div>
+
+        <!-- Donut Chart -->
+        <div class="chart-wrap mt-4"><canvas id="dailyChart"></canvas></div>
+        <p class="text-xs text-indigo-200 mt-3">Tips: aktifkan autodebit harian untuk pos <span class="font-semibold">Tabungan/Investasi</span> agar target selalu tercapai.</p>
+      </div>
+
+      <!-- Charts (Expenses) -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div class="glass p-5">
+          <h3 class="text-lg font-semibold mb-3"><i class="fa-solid fa-chart-pie text-indigo-400 mr-2"></i>Komposisi Pengeluaran</h3>
+          <div class="chart-wrap"><canvas id="pieChart"></canvas></div>
+        </div>
+        <div class="glass p-5">
+          <h3 class="text-lg font-semibold mb-3"><i class="fa-solid fa-chart-column text-indigo-400 mr-2"></i>Batas Aman vs Aktual</h3>
+          <div class="chart-wrap"><canvas id="barChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Age Advice -->
+      <div class="glass p-5">
+        <h3 class="text-lg font-semibold mb-3"><i class="fa-solid fa-user-clock text-violet-400 mr-2"></i>Rekomendasi Berbasis Usia</h3>
+        <div id="ageAdvice" class="text-gray-200"></div>
+      </div>
+
+      <!-- Strategy -->
+      <div class="glass p-5">
+        <h3 class="text-lg font-semibold mb-3"><i class="fa-solid fa-route text-teal-400 mr-2"></i>Langkah Pengurangan Beban & Strategi Pengembangan Ekonomi</h3>
+        <div id="strategy" class="grid md:grid-cols-2 gap-4"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="max-w-7xl mx-auto mt-8 text-center text-sm text-indigo-200">© <span id="y"></span> • Gunakan kebijaksanaan pribadi sebelum mengambil keputusan finansial.</footer>
+
+  <script>
+    document.getElementById('y').textContent = new Date().getFullYear();
+
+    // ===== Helpers =====
+    const rupiahToNumber = (v) => { if (!v) return 0; return Number(String(v).replace(/[^\d]/g,'')||0); };
+    const fmtIDR = (n) => 'Rp ' + (n||0).toLocaleString('id-ID');
+
+    const rpInputs = () => Array.from(document.querySelectorAll('.rupiah'));
+    const formatRpField = (el) => { const num = rupiahToNumber(el.value); el.value = num ? ('Rp ' + num.toLocaleString('id-ID')) : ''; };
+    rpInputs().forEach(el=>{ el.addEventListener('input', ()=>formatRpField(el)); el.addEventListener('blur', ()=>formatRpField(el)); });
+
+    // Limits/Targets
+    const maxLimits = { installment:0.30, education:0.15, health:0.10, lifestyle:0.20, other:0.15 };
+    const minTargets = { emergency:0.10, pension:0.10 };
+
+    const barColor = (ratio, limit, type='max')=>{
+      if (type==='max'){
+        if (ratio<=limit) return 'bg-green-500';
+        if (ratio<=limit*1.2) return 'bg-yellow-500';
+        return 'bg-red-500';
+      } else {
+        if (ratio>=limit) return 'bg-green-500';
+        if (ratio>=limit*0.7) return 'bg-yellow-500';
+        return 'bg-red-500';
+      }
+    };
+
+    // Charts
+    let pie=null, bar=null, dailyDonut=null;
+
+    const getVal = id=>rupiahToNumber(document.getElementById(id).value);
+    const getAge = ()=>Number(document.getElementById('age').value || 0);
+
+    function updateDailyPlan(totalIncome){
+      const daysSel = document.getElementById('daysSelect');
+      const days = Number(daysSel.value || 30);
+
+      const needM = totalIncome * 0.50;
+      const wantM = totalIncome * 0.30;
+      const saveM = totalIncome * 0.20;
+
+      const perDay = totalIncome / Math.max(1, days);
+      const needD = needM / Math.max(1, days);
+      const wantD = wantM / Math.max(1, days);
+      const saveD = saveM / Math.max(1, days);
+
+      document.getElementById('outMonth').textContent = fmtIDR(totalIncome);
+      document.getElementById('outPerDay').textContent = fmtIDR(Math.floor(perDay));
+      document.getElementById('outDays').textContent = `(dibagi ${days} hari/bulan)`;
+
+      document.getElementById('needDay').textContent = fmtIDR(Math.floor(needD));
+      document.getElementById('wantDay').textContent = fmtIDR(Math.floor(wantD));
+      document.getElementById('saveDay').textContent = fmtIDR(Math.floor(saveD));
+
+      document.getElementById('needMonth').textContent = `/ bulan: ${fmtIDR(needM)}`;
+      document.getElementById('wantMonth').textContent = `/ bulan: ${fmtIDR(wantM)}`;
+      document.getElementById('saveMonth').textContent = `/ bulan: ${fmtIDR(saveM)}`;
+
+      // Donut chart 50-30-20 (monthly composition)
+      const ctxD = document.getElementById('dailyChart').getContext('2d');
+      if (dailyDonut) dailyDonut.destroy();
+      dailyDonut = new Chart(ctxD, {
+        type:'doughnut',
+        data:{
+          labels:['Kebutuhan (50%)','Keinginan (30%)','Tabungan (20%)'],
+          datasets:[{ data:[needM, wantM, saveM], backgroundColor:['#10b981','#f59e0b','#3b82f6'], borderWidth:0 }]
+        },
+        options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ color:'#e5e7eb' } } } }
+      });
+    }
+
+    function analyze(){
+      const income = getVal('income');
+      const partner = getVal('partnerIncome');
+      const totalIncome = income + partner;
+
+      const data = {
+        installment:getVal('installment'), education:getVal('education'), health:getVal('health'),
+        emergency:getVal('emergency'), pension:getVal('pension'), lifestyle:getVal('lifestyle'), other:getVal('other')
+      };
+      const totalExpense = _.sum(Object.values(data));
+      const age = getAge();
+
+      // Show results
+      const res = document.getElementById('resultsWrap');
+      res.style.opacity = '1'; res.style.pointerEvents = 'auto';
+      document.getElementById('totalIncome').textContent = fmtIDR(totalIncome);
+      document.getElementById('totalExpense').textContent = fmtIDR(totalExpense);
+
+      // Status
+      const dot = document.getElementById('statusDot');
+      const statusText = document.getElementById('statusText');
+      const statusNote = document.getElementById('statusNote');
+      if (totalIncome === 0){
+        dot.style.background = 'var(--bad)';
+        statusText.textContent = '❌ Merah (Bahaya)';
+        statusNote.textContent = 'Prioritas saat ini adalah mencari pekerjaan atau sumber pendapatan baru.';
+      } else if (totalExpense > totalIncome*0.9){
+        dot.style.background = 'var(--bad)';
+        statusText.textContent = '❌ Merah (Bahaya)';
+        statusNote.textContent = 'Pengeluaran mendekati/lebih dari pendapatan. Segera lakukan pemangkasan & negosiasi beban.';
+      } else if (totalExpense > totalIncome*0.7){
+        dot.style.background = 'var(--warn)';
+        statusText.textContent = '⚠ Kuning (Waspada)';
+        statusNote.textContent = 'Rasio pengeluaran tinggi. Kurangi pos tidak esensial & kuatkan dana darurat.';
+      } else {
+        dot.style.background = 'var(--ok)';
+        statusText.textContent = '✅ Hijau (Sehat)';
+        statusNote.textContent = 'Struktur pengeluaran relatif sehat. Pertahankan disiplin.';
+      }
+
+      // Category progress
+      const wrap = document.getElementById('catProgress');
+      wrap.innerHTML = '';
+      const buildRow = (label, value, limitPct, type='max')=>{
+        const pct = totalIncome ? (value/totalIncome) : 0;
+        const barCls = barColor(pct, limitPct, type);
+        const width = Math.min(100, Math.round(pct*100));
+        const target = fmtIDR(Math.round(totalIncome*limitPct));
+        const badgeTxt = (type==='max'?'Batas aman ≤ ':'Target ≥ ') + target;
+        const icon = type==='max'
+          ? (pct<=limitPct?'fa-circle-check':(pct<=limitPct*1.2?'fa-triangle-exclamation':'fa-circle-xmark'))
+          : (pct>=limitPct?'fa-circle-check':(pct>=limitPct*0.7?'fa-triangle-exclamation':'fa-circle-xmark'));
+        const badgeColor = barCls==='bg-green-500'?'border-green-500/40 text-green-300' : barCls==='bg-yellow-500'?'border-yellow-500/40 text-yellow-300' : 'border-red-500/40 text-red-300';
+        return `
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <div class="font-medium">${label} <span class="text-gray-300 ml-2">${fmtIDR(value)}</span></div>
+              <div class="badge ${badgeColor}"><i class="fa-solid ${icon} mr-1"></i>${badgeTxt}</div>
+            </div>
+            <div class="bar"><div class="${barCls}" style="width:${width}%"></div></div>
+          </div>`;
+      };
+      [
+        ['Cicilan Hutang','installment',maxLimits.installment,'max'],
+        ['Biaya Pendidikan','education',maxLimits.education,'max'],
+        ['Kesehatan','health',maxLimits.health,'max'],
+        ['Tabungan Darurat','emergency',minTargets.emergency,'min'],
+        ['Dana Pensiun','pension',minTargets.pension,'min'],
+        ['Gaya Hidup','lifestyle',maxLimits.lifestyle,'max'],
+        ['Lainnya','other',maxLimits.other,'max']
+      ].forEach(([l,k,lim,t])=> wrap.insertAdjacentHTML('beforeend', buildRow(l, data[k], lim, t)) );
+
+      // Expense Charts
+      const pieData = [data.installment,data.education,data.health,data.emergency,data.pension,data.lifestyle,data.other];
+      const pieLabels = ['Cicilan','Pendidikan','Kesehatan','Darurat','Pensiun','Gaya Hidup','Lainnya'];
+      const ctxP = document.getElementById('pieChart').getContext('2d');
+      const ctxB = document.getElementById('barChart').getContext('2d');
+      if (pie) pie.destroy();
+      if (bar) bar.destroy();
+      pie = new Chart(ctxP,{
+        type:'doughnut',
+        data:{ labels: pieLabels, datasets:[{ data: pieData, backgroundColor:['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899','#6b7280'], borderWidth:0 }] },
+        options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ color:'#e5e7eb' } } } }
+      });
+      const safeCaps = [
+        Math.round(totalIncome*maxLimits.installment),
+        Math.round(totalIncome*maxLimits.education),
+        Math.round(totalIncome*maxLimits.health),
+        Math.round(totalIncome*minTargets.emergency),
+        Math.round(totalIncome*minTargets.pension),
+        Math.round(totalIncome*maxLimits.lifestyle),
+        Math.round(totalIncome*maxLimits.other)
+      ];
+      bar = new Chart(ctxB,{
+        type:'bar',
+        data:{ labels: pieLabels, datasets:[ { label:'Batas/Target', data:safeCaps, backgroundColor:'rgba(99,102,241,.5)' }, { label:'Aktual', data: pieData, backgroundColor:'rgba(16,185,129,.7)' } ] },
+        options:{ responsive:true, maintainAspectRatio:false, scales:{ x:{ticks:{color:'#c7d2fe'}}, y:{ ticks:{ color:'#c7d2fe', callback:v=>'Rp '+v.toLocaleString('id-ID') }, grid:{color:'rgba(255,255,255,.08)'} } }, plugins:{ legend:{ labels:{ color:'#e5e7eb' } } } }
+      });
+
+      // Daily plan  (based on TOTAL income)
+      updateDailyPlan(totalIncome);
+
+      // Age-based advice
+      const ageAdvice = document.getElementById('ageAdvice');
+      let txt = '';
+      if (age < 30) txt = 'Usia < 30 tahun → fokus membangun dana darurat & skill untuk meningkatkan pendapatan.';
+      else if (age < 40) txt = 'Usia 30–39 → disiplin pensiun ≥10% income, jaga cicilan ≤30%, tambah aset produktif.';
+      else if (age < 50) txt = 'Usia 40–49 → percepat investasi, minimalkan hutang, kuatkan diversifikasi.';
+      else txt = 'Usia ≥ 50 → amankan aset, minimalisir hutang, siapkan arus kas pensiun.';
+      ageAdvice.textContent = txt;
+
+      // Strategy builder
+      const s = [];
+      const dsr = totalIncome ? data.installment/totalIncome : 0;
+      const surplus = totalIncome - totalExpense;
+      if (totalIncome === 0){
+        s.push({ title:'Prioritas: Dapatkan Penghasilan', items:[ 'Perbarui CV/portofolio dan aktif di job board/LinkedIn.', 'Ambil kursus singkat 2–6 minggu untuk skill cepat.', 'Coba usaha kecil: jasa, reseller, atau produk digital.' ] });
+      } else {
+        if (dsr > 0.30){ s.push({ title:'Kurangi Beban Hutang (DSR > 30%)', items:[ 'Negosiasi restrukturisasi/tenor untuk turunkan cicilan.', 'Lunasi hutang bunga tertinggi terlebih dahulu (avalanche).', 'Tahan cicilan konsumtif sementara.' ] }); }
+        if (data.lifestyle > totalIncome*maxLimits.lifestyle){ s.push({ title:'Rasionalisasi Gaya Hidup', items:[ 'Putus 1–2 langganan jarang dipakai.', 'Tetapkan anggaran makan di luar per minggu.', 'Gunakan rule 24 jam untuk cegah belanja impulsif.' ] }); }
+        if (data.emergency < totalIncome*minTargets.emergency){ s.push({ title:'Bangun Dana Darurat', items:[ 'Setor otomatis ≥10% income ke instrumen likuid.', 'Target 3–6x pengeluaran bulanan.', 'Naikkan setoran saat ada kenaikan gaji/bonus.' ] }); }
+        if (data.pension < totalIncome*minTargets.pension){ s.push({ title:'Perkuat Dana Pensiun', items:[ 'Alokasikan ≥10% income ke DPLK/indeks.', 'Tambah kontribusi 1–2% tiap 6 bulan.', 'Hindari penarikan dini.' ] }); }
+        const steps = [ '0–1 bln: audit biaya, potong 10–20% non-esensial, aktifkan auto-debit tabungan.', '2–3 bln: setoran darurat ≥10% income/bln, bereskan hutang kecil (snowball).', '4–6 bln: capai darurat 3–6x pengeluaran, konsisten pensiun ≥10%.', '7–12 bln: tambah aset produktif, review asuransi.', '12+ bln: optimasi investasi & rencanakan tujuan besar.' ];
+        s.push({ title:'Roadmap 0–12+ Bulan', items: steps });
+        if (surplus < totalIncome*0.15){ s.push({ title:'Ide Penambah Penghasilan', items:[ 'Freelance/side hustle sesuai skill.', 'Produk digital (template, e-book, kelas singkat).', 'Program referral/affiliate.' ] }); }
+      }
+      const strategy = document.getElementById('strategy');
+      strategy.innerHTML = '';
+      s.forEach(block=>{
+        const html = `
+          <div class="p-4 rounded-lg" style="background:var(--card-bg); border:1px solid var(--card-br)">
+            <div class="font-semibold mb-2">${block.title}</div>
+            <ul class="list-disc list-inside space-y-1 text-gray-200">${block.items.map(it=>`<li>${it}</li>`).join('')}</ul>
+          </div>`;
+        strategy.insertAdjacentHTML('beforeend', html);
+      });
+
+      // When user changes days, recompute daily plan using current totalIncome
+      document.getElementById('daysSelect').onchange = ()=> updateDailyPlan(totalIncome);
+    }
+
+    document.getElementById('analyze').addEventListener('click', analyze);
+  </script>
+</body>
+</html>
